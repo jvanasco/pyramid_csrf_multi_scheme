@@ -118,7 +118,20 @@ class TestCookieCSRFStoragePolicy_InsecureHttp(unittest.TestCase):
 
         request.cookies = {"csrf_http": "foo"}
         self.assertTrue(policy.check_csrf_token(request, "foo"))
+        self.assertTrue(policy.check_csrf_token(request, b"foo"))
         self.assertFalse(policy.check_csrf_token(request, "bar"))
+
+    def test_check_csrf_token_rejects_malformed_input(self):
+        # type: () -> None
+        """Malformed inputs fail even when there is no cookie to compare."""
+        request = DummyRequest()
+        policy = self._makeOne()
+
+        for supplied_token in (None, 42, [b"foo"], u"\u2603"):
+            self.assertFalse(policy.check_csrf_token(request, supplied_token))
+
+        self.assertEqual(request.cookies, {})
+        self.assertEqual(request.response_callbacks, [])
 
 
 class TestCookieCSRFStoragePolicy_SecureHTTPS(unittest.TestCase):

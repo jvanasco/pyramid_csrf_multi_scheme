@@ -4,9 +4,11 @@ import uuid
 
 # pypi
 from pyramid.interfaces import ICSRFStoragePolicy
+from pyramid.request import Request
 from pyramid.util import strings_differ
 from pyramid.util import SimpleSerializer
 from webob.cookies import CookieProfile
+from webob.response import Response
 from zope.interface import implementer
 
 
@@ -123,37 +125,25 @@ class DualCookieCSRFStoragePolicy(object):
         )
 
     def new_csrf_token(self, request):
-        """ Sets a new CSRF token into the request and returns it. """
+        # type: (Request) -> str
+        """Rotate the HTTP token and also the HTTPS token on secure requests."""
 
-        def _token_secure():
+        def _issue_token(cookie_name, profile):
+            # type: (str, CookieProfile) -> str
+            """Store a fresh token and schedule its response cookie."""
             token = self._token_factory()
-            request.cookies[self.cookie_name_secure] = token
+            request.cookies[cookie_name] = token
 
             def _set_cookie(request, response):
-                self.cookie_profile_secure.set_cookies(response, token)
+                # type: (Request, Response) -> None
+                profile.set_cookies(response, token)
 
             request.add_response_callback(_set_cookie)
             return token
 
-        def _token_http():
-            token = self._token_factory()
-            request.cookies[self.cookie_name_http] = token
-
-            def _set_cookie(request, response):
-                self.cookie_profile_http.set_cookies(response, token)
-
-            request.add_response_callback(_set_cookie)
-            return token
-
-        # if we are on https, reset the http and https
-        # but only consult the https for data
+        token_http = _issue_token(self.cookie_name_http, self.cookie_profile_http)
         if request.scheme == "https":
-            token_http = _token_http()  # noqa
-            token_secure = _token_secure()
-            return token_secure
-
-        # otherwise, set only the http insecure cookie
-        token_http = _token_http()
+            return _issue_token(self.cookie_name_secure, self.cookie_profile_secure)
         return token_http
 
     def get_csrf_token(self, request):
@@ -173,9 +163,16 @@ class DualCookieCSRFStoragePolicy(object):
         return token
 
     def check_csrf_token(self, request, supplied_token):
-        """ Returns ``True`` if the ``supplied_token`` is valid."""
+        # type: (Request, object) -> bool
+        """Check a text or byte token using Pyramid's timing-safe comparison."""
+        if not isinstance(supplied_token, (text_type, binary_type)):
+            return False
+        try:
+            supplied_bytes = bytes_(supplied_token)
+        except UnicodeEncodeError:
+            return False
         expected_token = self.get_csrf_token(request)
-        return not strings_differ(bytes_(expected_token), bytes_(supplied_token))
+        return not strings_differ(bytes_(expected_token), supplied_bytes)
 
     def get_csrf_token_scheme(self, request, scheme):
         """this is a utility for testing"""
