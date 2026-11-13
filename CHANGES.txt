@@ -1,3 +1,11 @@
+1.0.0
+	* Fix Python 2.7 package builds by reading the version without importing Pyramid.
+	* Modernize package builds and align tox and GitHub Actions through Python 3.15.
+	* Generate HTML test coverage and retain Pyramid compatibility on Python 3.7–3.9.
+	* Reject malformed CSRF token inputs before reading or issuing cookies.
+	* Simplify HTTP and HTTPS CSRF cookie issuance.
+	* Python 3.9 and below will be dropped in version 2.0
+
 0.1.1
 	* packaging fixes
 	* should work with pyramid 1&2
