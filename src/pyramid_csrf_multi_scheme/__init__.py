@@ -65,6 +65,10 @@ class DualCookieCSRFStoragePolicy(object):
         expiring the csrf will expire the http
         only the http csrf will be consulted
 
+    By default, the cookie names are:
+        cookie_name_secure = "csrf_https"
+        cookie_name_http = "csrf_http"
+
     last synced to pyramid: 1.10.4
 
     NOTE: this does not support a ``secure`` argument

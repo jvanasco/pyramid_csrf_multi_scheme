@@ -4,10 +4,13 @@ pyramid_csrf_multi_scheme
 .. image:: https://github.com/jvanasco/pyramid_csrf_multi_scheme/workflows/Python%20package/badge.svg
         :alt: Build Status
 
+Pyramid's default session implementation provides for a single abstract session object,
+that is not related to the scheme.
+
 This package enables two separate cookie tokens on each request, bound to the scheme:
 
-* a SECURE HTTPS only cookie
-* a mixed-use insecure http token (which is also available on https).
+* a SECURE HTTPS only cookie, `csrf_https`
+* a mixed-use insecure http token (which is also available on https), `csrf_http`
 
 If the current scheme is `HTTPS`:
 
@@ -24,7 +27,8 @@ If the current scheme is `insecure http`:
 Python Versions
 ---------------
 
-This package is currently supported under Python2.7 and 3.8; other 3.x versions may work.
+This package is currently tested under Python2.7 and Python 3.6-3.15;
+other 3.x versions may work.
 
 This package should work on Pyramid1.x and 2.x
 
@@ -32,8 +36,12 @@ This package should work on Pyramid1.x and 2.x
 Why?
 ----
 
-If an application supports both `HTTP` and `HTTPS` endpoints, this package simplifies
-isolating the CSRF data from both.
+If an application supports both `HTTP` and `HTTPS` endpoints,
+this package simplifies sandboxing the CSRF data for each one.
+
+If an application only supports `HTTPS`, this library is irrelevant.
+
+Most modern applications should only support HTTPS.
 
 
 Is this necessary?
@@ -41,14 +49,10 @@ Is this necessary?
 
 I'm not sure, but have decided to err on the side of caution.
 
-HTTP traffic is sent in plaintext and capable of being intercepted by a
-man-in-the-middle or network packet sniffing.
-
-It seems plausible that someone might read a csrf token via HTTP and use that
-in attempts to compromise HTTPS endpoints in a mixed use environment.
-
-A better option is to only use HTTPS tokens and forms - but that is not
-always an option.
+The best solution is to only use HTTPS tokens and forms - but that is not always an
+option. Some applications must still support plain HTTP in certain contexts; if you must
+support plain HTTP, this package was designed to establish a security boundary between the
+two protocols at the CSRF validation layer.
 
 
 debugtoolbar support!
